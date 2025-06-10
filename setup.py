@@ -21,6 +21,13 @@ setup(
     ],
     python_requires=">=3.11",
     install_requires=[
-        # Add your dependencies here
+        "pandas>=1.3.0",
+        "evaluate==0.4.3",
+        "sacrebleu==2.5.1",
+        "rouge_score==0.1.2",
+        "bert-score==0.3.13",
+        "mauve-text==0.4.0",
+        "sentence-transformers==4.1.0",
+        "accelerate==1.7.0",
     ],
 )
