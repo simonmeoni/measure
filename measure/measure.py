@@ -29,6 +29,7 @@ def semantic_metrics(predictions: list, references: list):
     mauve_score = mauve.compute_mauve(
         p_text=references,
         q_text=predictions,
+        device_id=0,
     )
 
     perplexity = evaluate.load("perplexity", module_type="metric")
