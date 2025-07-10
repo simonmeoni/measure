@@ -1,4 +1,5 @@
 from rouge_score import scoring
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from measure.text_attack import attack
 from measure.fid_metric import Fid
 import evaluate
@@ -32,8 +33,11 @@ def semantic_metrics(predictions: list, references: list):
         device_id=0,
     )
 
+    model = AutoModelForCausalLM.from_pretrained("gpt2")
+    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    model_id = (model, tokenizer)
     perplexity = evaluate.load("perplexity", module_type="metric")
-    perplexity_results = perplexity.compute(predictions=predictions, model_id="gpt2")
+    perplexity_results = perplexity.compute(predictions=predictions, model_id=model_id)
 
     bertscore = evaluate.load("bertscore")
     bertscore_results = bertscore.compute(
