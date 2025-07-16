@@ -41,18 +41,12 @@ def semantic_metrics(predictions: list, references: list):
         predictions=predictions, model_id="gpt2", max_length=512
     )
 
-    bertscore = evaluate.load("bertscore")
-    bertscore_results = bertscore.compute(
-        predictions=predictions, references=references, lang="en"
-    )
-
     fid_calculator = Fid(model_name="all-mpnet-base-v2")
     fid_score = fid_calculator.compute(references, predictions)
 
     return {
         "mauve": mauve_score.mauve,
         "perplexity": perplexity_results["mean_perplexity"],
-        "bertscore_f1": sum(bertscore_results["f1"]) / len(bertscore_results["f1"]),
         "fid": fid_score,
     }
 
