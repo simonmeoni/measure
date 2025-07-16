@@ -27,9 +27,12 @@ def translation_metrics(predictions: list, references: list):
 
 def semantic_metrics(predictions: list, references: list):
 
+    # Use only 30% of predictions for MAUVE score calculation
+    predictions_subset = predictions[: int(len(predictions) * 0.3)]
+
     mauve_score = mauve.compute_mauve(
         p_text=references,
-        q_text=predictions,
+        q_text=predictions_subset,
         device_id=0,
     )
 
