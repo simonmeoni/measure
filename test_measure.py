@@ -1,7 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from measure.measure import translation_metrics, semantic_metrics, privacy_metrics
+
+from measure.measure import privacy_metrics, semantic_metrics, translation_metrics
 
 
 class TestTranslationMetrics(unittest.TestCase):
