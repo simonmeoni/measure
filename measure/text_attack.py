@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -70,13 +70,6 @@ def attack(
         ValueError: If attack_type is not 'static' or 'adaptive'
         KeyError: If specified column fields don't exist in DataFrames
     """
-    # Validate inputs
-    if clean_df_text_field not in clean_df.columns:
-        raise KeyError(f"Column '{clean_df_text_field}' not found in clean_df")
-    if private_df_text_field not in private_df.columns:
-        raise KeyError(f"Column '{private_df_text_field}' not found in private_df")
-    if private_id_field not in clean_df.columns:
-        raise KeyError(f"Column '{private_id_field}' not found in clean_df")
 
     private_df_with_labels = pd.concat(
         [private_df, clean_df[[private_id_field]]], axis=1

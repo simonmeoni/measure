@@ -1,11 +1,11 @@
-from rouge_score import scoring
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from measure.text_attack import attack
-from measure.fid_metric import Fid
 import evaluate
 import mauve
-from rouge_score.rouge_scorer import RougeScorer
 import sacrebleu
+from rouge_score import scoring
+from rouge_score.rouge_scorer import RougeScorer
+
+from measure.fid_metric import Fid
+from measure.text_attack import attack
 
 
 def translation_metrics(predictions: list, references: list):
@@ -62,8 +62,8 @@ def privacy_metrics(public_df, private_df, split=[80, 20, 20]):
 
     flattened_metrics = {}
     for field, metrics in adaptive_results.items():
-        flattened_metrics[f"adaptive/f1"] = metrics["eval_F1 Score"]
-        flattened_metrics[f"adaptive/mcc"] = metrics[
+        flattened_metrics["adaptive/f1"] = metrics["eval_F1 Score"]
+        flattened_metrics["adaptive/mcc"] = metrics[
             "eval_Matthew correlation coefficient"
         ]
 
@@ -71,8 +71,8 @@ def privacy_metrics(public_df, private_df, split=[80, 20, 20]):
         clean_df=public_df, private_df=private_df, split=split, attack_type="static"
     )
     for field, metrics in static_results.items():
-        flattened_metrics[f"static/f1"] = metrics["eval_F1 Score"]
-        flattened_metrics[f"static/mcc"] = metrics[
+        flattened_metrics["static/f1"] = metrics["eval_F1 Score"]
+        flattened_metrics["static/mcc"] = metrics[
             "eval_Matthew correlation coefficient"
         ]
 

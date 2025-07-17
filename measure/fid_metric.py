@@ -1,6 +1,6 @@
-from sentence_transformers import SentenceTransformer
-from scipy.linalg import sqrtm
 import numpy as np
+from scipy.linalg import sqrtm
+from sentence_transformers import SentenceTransformer
 
 
 class Fid:
