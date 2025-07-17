@@ -37,8 +37,11 @@ def semantic_metrics(predictions: list, references: list):
     )
 
     perplexity = evaluate.load("perplexity", module_type="metric")
-    perplexity_results = perplexity.compute(
+    predictions_perplexity_results = perplexity.compute(
         predictions=predictions, model_id="gpt2", max_length=512
+    )
+    references_perplexity_results = perplexity.compute(
+        predictions=references, model_id="gpt2", max_length=512
     )
 
     fid_calculator = Fid(model_name="all-mpnet-base-v2")
@@ -46,7 +49,8 @@ def semantic_metrics(predictions: list, references: list):
 
     return {
         "mauve": mauve_score.mauve,
-        "perplexity": perplexity_results["mean_perplexity"],
+        "references_perplexity": references_perplexity_results["mean_perplexity"],
+        "predictions_perplexity": predictions_perplexity_results["mean_perplexity"],
         "fid": fid_score,
     }
 
