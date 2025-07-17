@@ -58,22 +58,21 @@ class TestSemanticMetrics(unittest.TestCase):
 
         # Check that all expected keys are present
         self.assertIn("mauve", result)
-        self.assertIn("perplexity", result)
-        self.assertIn("bertscore_f1", result)
+        self.assertIn("predictions_perplexity", result)
+        self.assertIn("references_perplexity", result)
         self.assertIn("fid", result)
 
         # Check that values are numeric
         self.assertIsInstance(result["mauve"], (int, float))
-        self.assertIsInstance(result["perplexity"], (int, float))
-        self.assertIsInstance(result["bertscore_f1"], (int, float))
+        self.assertIsInstance(result["predictions_perplexity"], (int, float))
+        self.assertIsInstance(result["references_perplexity"], (int, float))
         self.assertIsInstance(result["fid"], (int, float))
 
         # Check that values are in reasonable ranges
         self.assertGreaterEqual(result["mauve"], 0)
         self.assertLessEqual(result["mauve"], 1)
-        self.assertGreater(result["perplexity"], 0)
-        self.assertGreaterEqual(result["bertscore_f1"], 0)
-        self.assertLessEqual(result["bertscore_f1"], 1)
+        self.assertGreater(result["predictions_perplexity"], 0)
+        self.assertGreater(result["references_perplexity"], 0)
 
 
 def test_privacy_metrics():
