@@ -4,8 +4,7 @@ import sacrebleu
 from rouge_score import scoring
 from rouge_score.rouge_scorer import RougeScorer
 
-from measure.fid_metric import Fid
-from measure.text_attack import attack
+from measure.utils.fid_metric import Fid
 
 
 def translation_metrics(predictions: list, references: list):
@@ -25,7 +24,7 @@ def translation_metrics(predictions: list, references: list):
     }
 
 
-def semantic_metrics(predictions: list, references: list):
+def similarity_metrics(predictions: list, references: list):
 
     # Use only 30% of predictions for MAUVE score calculation
     predictions_subset = predictions[: int(len(predictions) * 0.3)]
@@ -53,27 +52,3 @@ def semantic_metrics(predictions: list, references: list):
         "predictions_perplexity": predictions_perplexity_results["mean_perplexity"],
         "fid": fid_score,
     }
-
-
-def privacy_metrics(public_df, private_df, split=[80, 20, 20]):
-    adaptive_results = attack(
-        clean_df=public_df, private_df=private_df, split=split, attack_type="adaptive"
-    )
-
-    flattened_metrics = {}
-    for field, metrics in adaptive_results.items():
-        flattened_metrics["adaptive/f1"] = metrics["eval_F1 Score"]
-        flattened_metrics["adaptive/mcc"] = metrics[
-            "eval_Matthew correlation coefficient"
-        ]
-
-    static_results = attack(
-        clean_df=public_df, private_df=private_df, split=split, attack_type="static"
-    )
-    for field, metrics in static_results.items():
-        flattened_metrics["static/f1"] = metrics["eval_F1 Score"]
-        flattened_metrics["static/mcc"] = metrics[
-            "eval_Matthew correlation coefficient"
-        ]
-
-    return flattened_metrics

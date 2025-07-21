@@ -1,9 +1,11 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 
-from measure.measure import privacy_metrics, semantic_metrics, translation_metrics
+from measure.downstream_tasks import gpt_eval_alpacare
+from measure.privacy import author_attack
+from measure.semantic import similarity_metrics, translation_metrics
 
 
 class TestTranslationMetrics(unittest.TestCase):
@@ -42,18 +44,18 @@ class TestTranslationMetrics(unittest.TestCase):
 
 
 class TestSemanticMetrics(unittest.TestCase):
-    @patch("measure.measure.mauve")
-    def test_semantic_metrics_returns_dict(self, mock_mauve):
+    @patch("measure.semantic.mauve")
+    def test_similarity_metrics_returns_dict(self, mock_mauve):
         # Mock mauve.compute_mauve to return a predictable result
         mock_result = MagicMock()
         mock_result.mauve = 0.75
         mock_mauve.compute_mauve.return_value = mock_result
 
-        # Test that semantic_metrics returns a dictionary with expected structure
+        # Test that similarity_metrics returns a dictionary with expected structure
         predictions = ["The cat is sleeping.", "It's a beautiful day."]
         references = ["A cat is resting.", "The weather is nice today."]
 
-        result = semantic_metrics(predictions, references)
+        result = similarity_metrics(predictions, references)
 
         # Check that result is a dictionary
         self.assertIsInstance(result, dict)
@@ -116,7 +118,7 @@ def test_privacy_metrics():
     )
 
     # Test privacy metrics with 10 data points
-    result = privacy_metrics(public_data, private_data, split=[60, 20, 20])
+    result = author_attack(public_data, private_data, split=[60, 20, 20])
     print("Privacy metrics executed successfully")
 
     # Verify result is a dictionary with expected structure
@@ -125,6 +127,41 @@ def test_privacy_metrics():
     assert "static/mcc" in result
     assert "adaptive/f1" in result
     assert "adaptive/mcc" in result
+
+
+class TestDownstreamTasks(unittest.TestCase):
+    @patch("measure.utils.gpt_eval.AsyncOpenAI")
+    def test_gpt_eval_alpacare(self, mock_async_openai):
+
+        # Create a mock response object
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Tie"
+
+        # Mock the AsyncOpenAI client and its chat.completions.create method
+        mock_client = AsyncMock()
+        mock_client.chat.completions.create.return_value = mock_response
+        mock_async_openai.return_value = mock_client
+
+        # Test with toy data directory
+        result = gpt_eval_alpacare(
+            data_dir="data/alpacare",
+            max_samples=10,
+            tested_model_name="data/alpacare/gpt-4",
+        )
+
+        # Verify result structure
+        self.assertIsInstance(result, dict)
+        # Check that some expected keys exist
+        for key in result.keys():
+            self.assertTrue(key.startswith("gpt_eval/"))
+        assert result["gpt_eval/gpt-4"] == 0.5
+        assert result["gpt_eval/claude-2"] == 0.5
+        assert result["gpt_eval/gpt-3.5-turbo"] == 0.5
+        assert result["gpt_eval/text-davinci-003"] == 0.5
+
+        # Verify the API client was instantiated
+        mock_async_openai().chat.completions.create.assert_awaited()
 
 
 if __name__ == "__main__":
