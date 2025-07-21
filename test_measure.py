@@ -179,7 +179,6 @@ class TestMimicIIIClassification(unittest.TestCase):
         self.assertIn("mimic_iii_icd/f1", result)
         self.assertIn("mimic_iii_icd/precision", result)
         self.assertIn("mimic_iii_icd/recall", result)
-        print(result)
 
 
 if __name__ == "__main__":
