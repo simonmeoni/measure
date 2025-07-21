@@ -6,6 +6,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
 import openai
 import pandas as pd
 from dotenv import load_dotenv
@@ -132,7 +133,7 @@ class GPTEvaluator:
         return await asyncio.gather(*async_responses)
 
 
-def gpt_evaluate(
+def compute_preference(
     model_data: Union[str, List[Dict], pd.DataFrame],
     reference_data: Union[str, List[Dict], pd.DataFrame],
     model_name: str = "model",
@@ -303,3 +304,49 @@ def gpt_evaluate(
 
     # Parse results and return both metrics and raw results
     return all_results
+
+
+def remove_special_characters(input_string):
+    """Remove special characters from string"""
+    cleaned_string = re.sub(r"[^a-zA-Z0-9]", "", input_string)
+    return cleaned_string
+
+
+def str_win_calculate(completion, compared_model, refer_model):
+    """Calculate win score from string completion"""
+    if completion == refer_model:
+        return [0]
+    elif completion == compared_model:
+        return [1]
+    elif "Tie" in completion:
+        return [0.5]
+    else:
+        return [np.nan]
+
+
+def win_score_list_calculate(data, compared_model, refer_model):
+    """Calculate win scores from evaluation data"""
+    score_list = []
+    for d_i in data:
+        output = d_i["response"]
+        model_1 = d_i["model_1"]
+        model_2 = d_i["model_2"]
+
+        output = output.strip()
+        output = output.replace("Output (a)", model_1)
+        output = output.replace("Output (b)", model_2)
+        compared_model = remove_special_characters(compared_model)
+        refer_model = remove_special_characters(refer_model)
+        output = remove_special_characters(output)
+
+        score = str_win_calculate(output, compared_model, refer_model)
+        score_list.extend(score)
+
+    return np.array(score_list)
+
+
+def pairwise_mean(arr1, arr2):
+    """Calculate pairwise mean of two arrays"""
+    assert len(arr1) == len(arr2), "Arrays must be of the same length"
+    means = np.where((~np.isnan(arr1) & ~np.isnan(arr2)), (arr1 + arr2) / 2, np.nan)
+    return means

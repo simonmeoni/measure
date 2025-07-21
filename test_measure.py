@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 
-from measure.downstream_tasks import gpt_eval_alpacare
+from measure.downstream_tasks import gpt_eval, mimic_iii_icd_classification
 from measure.privacy import author_attack
 from measure.semantic import similarity_metrics, translation_metrics
 
@@ -144,7 +144,7 @@ class TestDownstreamTasks(unittest.TestCase):
         mock_async_openai.return_value = mock_client
 
         # Test with toy data directory
-        result = gpt_eval_alpacare(
+        result = gpt_eval(
             data_dir="data/alpacare",
             max_samples=10,
             tested_model_name="data/alpacare/gpt-4",
@@ -162,6 +162,24 @@ class TestDownstreamTasks(unittest.TestCase):
 
         # Verify the API client was instantiated
         mock_async_openai().chat.completions.create.assert_awaited()
+
+
+class TestMimicIIIClassification(unittest.TestCase):
+    def test_mimic_iii_icd_classification_basic(self):
+        """Test MIMIC-III ICD classification runs and returns expected metrics"""
+        result = mimic_iii_icd_classification(
+            test_data_dir="data/mimic-iii-test",
+            train_data_dir="data/mimic-iii-test",
+            model_name="microsoft/deberta-v3-base",
+        )
+
+        # Verify result is dict with expected keys
+        self.assertIsInstance(result, dict)
+        self.assertIn("mimic_iii_icd/accuracy", result)
+        self.assertIn("mimic_iii_icd/f1", result)
+        self.assertIn("mimic_iii_icd/precision", result)
+        self.assertIn("mimic_iii_icd/recall", result)
+        print(result)
 
 
 if __name__ == "__main__":
