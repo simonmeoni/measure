@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pandas as pd
 
 from measure.downstream_tasks import gpt_eval, mimic_iii_icd_classification
-from measure.privacy import anonymity, author_attack
+from measure.privacy import (
+    anonymity,
+    author_attack,
+    linkage_attack_embeddings,
+    linkage_attack_tfidf,
+)
 from measure.semantic import similarity_metrics, translation_metrics
 
 
@@ -160,6 +165,36 @@ def test_privacy_metrics():
         print(results)
         assert key in results
         assert isinstance(results[key], (int, float))
+
+    df = pd.DataFrame(
+        {
+            "patient_id": [1, 1, 2, 2, 3],
+            "keywords": [
+                "diabetes hypertension",
+                "hypertension diabetes",
+                "asthma",
+                "asthma copd",
+                "diabetes",
+            ],
+        }
+    )
+
+    public_df = df.iloc[[0, 2, 4]].reset_index(drop=True)
+
+    private_df = df.iloc[[1, 3, 0]].reset_index(drop=True)
+
+    tfidf_res = linkage_attack_tfidf(public_df, private_df)
+    assert "linkage/accuracy_tfidf" in tfidf_res
+    assert 0.0 <= tfidf_res["linkage/accuracy_tfidf"] <= 1.0
+
+    emb_res = linkage_attack_embeddings(
+        public_df,
+        private_df,
+    )
+    key = "linkage/accuracy_paraphrase-MiniLM-L6-v2"
+    print(emb_res)
+    assert key in emb_res
+    assert 0.0 <= emb_res[key] <= 1.0
 
 
 class TestDownstreamTasks(unittest.TestCase):
