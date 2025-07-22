@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pandas as pd
 
 from measure.downstream_tasks import gpt_eval, mimic_iii_icd_classification
-from measure.privacy import author_attack
+from measure.privacy import anonymity, author_attack
 from measure.semantic import similarity_metrics, translation_metrics
 
 
@@ -127,6 +127,39 @@ def test_privacy_metrics():
     assert "static/mcc" in result
     assert "adaptive/f1" in result
     assert "adaptive/mcc" in result
+
+    df = pd.DataFrame(
+        {
+            "keywords": [
+                "diabetes hypertension",
+                "hypertension diabetes",
+                "asthma",
+                "asthma",
+                "diabetes",
+            ],
+            "ground_texts": [
+                "Patient has diabetes and hypertension.",
+                "Hypertension and diabetes both present.",
+                "Asthma symptoms observed.",
+                "Asthma symptoms recurring.",
+                "Diabetic condition confirmed.",
+            ],
+        }
+    )
+    results = anonymity(df)
+
+    assert isinstance(results, dict)
+    for key in [
+        "privacy/k_anonymity",
+        "privacy/alpha_k_anonymity",
+        "privacy/delta_disclosure",
+        "privacy/beta_likeness",
+        "privacy/recursive_c_l_diversity_score",
+        "privacy/recursive_c_l_diversity_violations",
+    ]:
+        print(results)
+        assert key in results
+        assert isinstance(results[key], (int, float))
 
 
 class TestDownstreamTasks(unittest.TestCase):
