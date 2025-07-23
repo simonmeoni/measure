@@ -2,13 +2,15 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
+import torch
 
-from measure.downstream_tasks import gpt_eval, mimic_iii_icd_classification
+from measure.downstream_tasks import caml_classification, gpt_eval, mimic_iii_icd_classification
 from measure.privacy import (
     anonymity,
     author_attack,
     linkage_attack_embeddings,
     linkage_attack_tfidf,
+    membership_attack,
 )
 from measure.semantic import similarity_metrics, translation_metrics
 
@@ -180,7 +182,6 @@ def test_privacy_metrics():
     )
 
     public_df = df.iloc[[0, 2, 4]].reset_index(drop=True)
-
     private_df = df.iloc[[1, 3, 0]].reset_index(drop=True)
 
     tfidf_res = linkage_attack_tfidf(public_df, private_df)
@@ -192,9 +193,25 @@ def test_privacy_metrics():
         private_df,
     )
     key = "linkage/accuracy_paraphrase-MiniLM-L6-v2"
-    print(emb_res)
     assert key in emb_res
     assert 0.0 <= emb_res[key] <= 1.0
+
+    model_id = "sshleifer/tiny-gpt2"  # 14 MB, parfait pour CI
+    pub = pd.DataFrame({"ground_texts": ["hello world"] * 3})
+    prv = pd.DataFrame({"ground_texts": ["new unseen note"] * 2})
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    metrics = membership_attack(
+        model_name_or_path=model_id,
+        public_df=pub,
+        private_df=prv,
+        device=device,
+        batch_size=2,
+    )
+
+    # clés essentielles présentes
+    for k in ["mia_bb/auc", "mia_gb/auc"]:
+        assert k in metrics and isinstance(metrics[k], float)
 
 
 class TestDownstreamTasks(unittest.TestCase):
@@ -247,6 +264,105 @@ class TestMimicIIIClassification(unittest.TestCase):
         self.assertIn("mimic_iii_icd/f1", result)
         self.assertIn("mimic_iii_icd/precision", result)
         self.assertIn("mimic_iii_icd/recall", result)
+
+
+class TestCAMLClassification(unittest.TestCase):
+    def setUp(self):
+        """Create toy CAML datasets for testing"""
+        import os
+        import tempfile
+
+        # Create temporary directory for test data
+        self.test_dir = tempfile.mkdtemp()
+
+        # Create toy data with 3 samples each
+        # Format: SUBJECT_ID,HADM_ID,LABELS,TEXT,HOT_LABELS
+        train_data = [
+            [
+                1,
+                100,
+                "401.9;250.00",
+                "Patient has hypertension and diabetes.",
+                "[1, 0, 1, 0, 0]",
+            ],
+            [2, 101, "250.00", "Diabetic patient requires insulin.", "[0, 0, 1, 0, 0]"],
+            [
+                3,
+                102,
+                "401.9;272.4",
+                "High blood pressure and high cholesterol.",
+                "[1, 0, 0, 1, 0]",
+            ],
+        ]
+
+        dev_data = [
+            [4, 103, "401.9", "Hypertensive crisis observed.", "[1, 0, 0, 0, 0]"],
+            [
+                5,
+                104,
+                "250.00;272.4",
+                "Diabetes with cholesterol issues.",
+                "[0, 0, 1, 1, 0]",
+            ],
+            [6, 105, "414.01", "Coronary artery disease present.", "[0, 1, 0, 0, 0]"],
+        ]
+
+        test_data = [
+            [
+                7,
+                106,
+                "401.9;250.00",
+                "Patient with both hypertension and diabetes.",
+                "[1, 0, 1, 0, 0]",
+            ],
+            [8, 107, "272.4", "High cholesterol levels detected.", "[0, 0, 0, 1, 0]"],
+            [
+                9,
+                108,
+                "414.01;401.9",
+                "Heart disease with high blood pressure.",
+                "[1, 1, 0, 0, 0]",
+            ],
+        ]
+
+        # Create CSV files
+        columns = ["SUBJECT_ID", "HADM_ID", "LABELS", "TEXT", "HOT_LABELS"]
+
+        train_df = pd.DataFrame(train_data, columns=columns)
+        dev_df = pd.DataFrame(dev_data, columns=columns)
+        test_df = pd.DataFrame(test_data, columns=columns)
+
+        self.train_path = os.path.join(self.test_dir, "train.csv")
+        self.dev_path = os.path.join(self.test_dir, "dev.csv")
+        self.test_path = os.path.join(self.test_dir, "test.csv")
+
+        train_df.to_csv(self.train_path, index=False)
+        dev_df.to_csv(self.dev_path, index=False)
+        test_df.to_csv(self.test_path, index=False)
+
+    def tearDown(self):
+        """Clean up temporary files"""
+        import shutil
+
+        shutil.rmtree(self.test_dir)
+
+    def test_caml_classification_basic(self):
+        """Test CAML classification runs and returns expected metrics"""
+        result = caml_classification(
+            train_data_path=self.train_path,
+            dev_data_path=self.dev_path,
+            test_data_path=self.test_path,
+            model_name="microsoft/deberta-v3-base",
+        )
+
+        # Verify result is dict with expected keys
+        self.assertIsInstance(result, dict)
+        self.assertIn("caml/accuracy", result)
+        self.assertIn("caml/f1", result)
+        self.assertIn("caml/precision", result)
+        self.assertIn("caml/recall", result)
+
+        print("CAML Classification Results:", result)
 
 
 if __name__ == "__main__":
