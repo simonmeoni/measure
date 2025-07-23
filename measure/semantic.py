@@ -24,7 +24,9 @@ def translation_metrics(predictions: list, references: list):
     }
 
 
-def similarity_metrics(predictions: list, references: list):
+def similarity_metrics(
+    predictions: list, references: list, mauve_scaling_factor: int = 5
+):
 
     # Use only 30% of predictions for MAUVE score calculation
     predictions_subset = predictions[: int(len(predictions) * 0.3)]
@@ -32,6 +34,8 @@ def similarity_metrics(predictions: list, references: list):
     mauve_score = mauve.compute_mauve(
         p_text=references,
         q_text=predictions_subset,
+        num_buckets=int(0.1 * len(predictions_subset)),
+        mauve_scaling_factor=mauve_scaling_factor,
         device_id=0,
     )
 
