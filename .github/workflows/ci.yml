@@ -30,11 +30,11 @@ jobs:
 
     - name: Run pre-commit
       run: |
-        pre-commit run --all-files
+        uv run pre-commit run --all-files
 
     - name: Run tests
       run: |
-        pytest
+        uv run pytest
 
     - name: Build package
       run: |
