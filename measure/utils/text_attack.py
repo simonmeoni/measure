@@ -44,7 +44,9 @@ def split_df(split: List[int], df: pd.DataFrame) -> List[pd.DataFrame]:
 def attack(
     clean_df: pd.DataFrame,
     private_df: pd.DataFrame,
-    split: List[int],
+    train_ds: pd.DataFrame,
+    dev_ds: pd.DataFrame,
+    test_ds: pd.DataFrame,
     attack_type: str,
     private_id_field: str = "private_id",
     clean_df_text_field: str = "text",
@@ -80,9 +82,10 @@ def attack(
     val_df: pd.DataFrame
     test_df: pd.DataFrame
 
-    train_idx_list, val_idx_list, test_idx_list = split_df(
-        split, private_df_with_labels
-    )
+    # Use provided datasets instead of splitting
+    train_idx_list = train_ds.index.tolist()
+    val_idx_list = dev_ds.index.tolist()
+    test_idx_list = test_ds.index.tolist()
 
     if attack_type == "static":
         train_df = clean_df[clean_df.index.isin(train_idx_list)]

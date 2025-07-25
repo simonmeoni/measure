@@ -14,9 +14,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from measure.utils.text_attack import attack
 
 
-def author_attack(public_df, private_df, split=[80, 20, 20]):
+def author_attack(public_df, private_df, train_ds, dev_ds, test_ds):
     adaptive_results = attack(
-        clean_df=public_df, private_df=private_df, split=split, attack_type="adaptive"
+        clean_df=public_df,
+        private_df=private_df,
+        train_ds=train_ds,
+        dev_ds=dev_ds,
+        test_ds=test_ds,
+        attack_type="adaptive",
     )
 
     flattened_metrics = {}
@@ -27,7 +32,12 @@ def author_attack(public_df, private_df, split=[80, 20, 20]):
         ]
 
     static_results = attack(
-        clean_df=public_df, private_df=private_df, split=split, attack_type="static"
+        clean_df=public_df,
+        private_df=private_df,
+        train_ds=train_ds,
+        dev_ds=dev_ds,
+        test_ds=test_ds,
+        attack_type="static",
     )
     for _, metrics in static_results.items():
         flattened_metrics["static/f1"] = metrics["eval_F1 Score"]

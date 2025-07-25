@@ -124,8 +124,13 @@ def test_privacy_metrics():
         }
     )
 
-    # Test privacy metrics with 10 data points
-    result = author_attack(public_data, private_data, split=[60, 20, 20])
+    # Create train/dev/test splits for testing
+    train_ds = public_data.iloc[:6].copy()
+    dev_ds = public_data.iloc[6:8].copy()
+    test_ds = private_data.iloc[:2].copy()
+
+    # Test privacy metrics with custom splits
+    result = author_attack(public_data, private_data, train_ds, dev_ds, test_ds)
     print("Privacy metrics executed successfully")
 
     # Verify result is a dictionary with expected structure
