@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+import torch
 from datasets import Dataset
 from sklearn import metrics
 from transformers import (
@@ -241,9 +242,9 @@ def get_stats(
 
     for label_field in labels_fields:
         num_classes: int = int(train_df[label_field].nunique())
-        train_labels = np.array(train_df[label_field])
-        val_labels = np.array(val_df[label_field])
-        test_labels = np.array(test_df[label_field])
+        train_labels = torch.tensor(train_df[label_field].values, dtype=torch.long)
+        val_labels = torch.tensor(val_df[label_field].values, dtype=torch.long)
+        test_labels = torch.tensor(val_df[label_field].values, dtype=torch.long)
 
         train_dataset = Dataset.from_dict(
             {
