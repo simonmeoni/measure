@@ -175,7 +175,7 @@ def get_trained_trainer(
         output_dir=f"./output_{label}",
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
-        num_train_epochs=3,
+        num_train_epochs=30,
         eval_strategy="epoch",
         save_strategy="epoch",
         save_total_limit=1,
