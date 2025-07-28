@@ -79,13 +79,13 @@ def linkage_attack_tfidf(
 ) -> dict:
     """Linkage via TF-IDF + 1-NN (cosine)."""
     vectorizer = TfidfVectorizer()
-    X_pub = vectorizer.fit_transform(public_df[text_col])
-    X_priv = vectorizer.transform(private_df[text_col])
+    public_idf = vectorizer.fit_transform(public_df[text_col])
+    private_idf = vectorizer.transform(private_df[text_col])
 
     nn = NearestNeighbors(n_neighbors=1, metric="cosine")
-    nn.fit(X_pub)
+    nn.fit(public_idf)
 
-    _, idx = nn.kneighbors(X_priv)
+    _, idx = nn.kneighbors(private_idf)
     predicted_ids = public_df.iloc[idx.flatten()][id_col].values
     true_ids = private_df[id_col].values
 
@@ -106,13 +106,13 @@ def linkage_attack_embeddings(
 ) -> dict:
     """Linkage via embeddings Sentence-Transformers + 1-NN (cosine)."""
     st_model = SentenceTransformer(model_name)
-    X_pub = st_model.encode(
+    public_embeddings = st_model.encode(
         public_df[text_col].tolist(),
         batch_size=32,
         convert_to_numpy=True,
         show_progress_bar=False,
     )
-    X_priv = st_model.encode(
+    private_embeddings = st_model.encode(
         private_df[text_col].tolist(),
         batch_size=32,
         convert_to_numpy=True,
@@ -120,9 +120,9 @@ def linkage_attack_embeddings(
     )
 
     nn = NearestNeighbors(n_neighbors=1, metric="cosine")
-    nn.fit(X_pub)
+    nn.fit(public_embeddings)
 
-    _, idx = nn.kneighbors(X_priv)
+    _, idx = nn.kneighbors(private_embeddings)
     predicted_ids = public_df.iloc[idx.flatten()][id_col].values
     true_ids = private_df[id_col].values
 
