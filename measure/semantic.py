@@ -4,7 +4,7 @@ import sacrebleu
 from rouge_score import scoring
 from rouge_score.rouge_scorer import RougeScorer
 
-from measure.utils.fid_metric import Fid
+from measure.utils.semantic.fid import _Fid
 
 
 def translation_metrics(predictions: list, references: list):
@@ -44,7 +44,7 @@ def similarity_metrics(
         predictions=references, model_id="gpt2", max_length=512
     )
 
-    fid_calculator = Fid(model_name="all-mpnet-base-v2")
+    fid_calculator = _Fid(model_name="all-mpnet-base-v2")
     fid_score = fid_calculator.compute(references, predictions)
 
     return {

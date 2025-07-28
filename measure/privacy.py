@@ -1,6 +1,5 @@
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-import evaluate
 import numpy as np
 import pandas as pd
 import torch
@@ -11,11 +10,12 @@ from sklearn.metrics import accuracy_score, average_precision_score, roc_auc_sco
 from sklearn.neighbors import NearestNeighbors
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from measure.utils.text_attack import attack
+from measure.utils.privacy.author_attack import _attack
+from measure.utils.privacy.ppl_score import _compute_ppl_scores
 
 
 def author_attack(public_df, private_df, train_ds, dev_ds, test_ds):
-    adaptive_results = attack(
+    adaptive_results = _attack(
         clean_df=public_df,
         private_df=private_df,
         train_ds=train_ds,
@@ -31,7 +31,7 @@ def author_attack(public_df, private_df, train_ds, dev_ds, test_ds):
             "eval_Matthew correlation coefficient"
         ]
 
-    static_results = attack(
+    static_results = _attack(
         clean_df=public_df,
         private_df=private_df,
         train_ds=train_ds,
@@ -55,7 +55,7 @@ def anonymity(df, qi_cols=["keywords"], sensitive_col=["ground_texts"]):
     )
     results["privacy/recursive_c_l_diversity_score"] = (
         float(score) if score == score else 0.0
-    )  # catch NaN
+    )
     results["privacy/recursive_c_l_diversity_violations"] = violating_groups
     results["privacy/k_anonymity"] = an.k_anonymity(df, quasi_ident=qi_cols)
     results["privacy/alpha_k_anonymity"] = an.alpha_k_anonymity(
@@ -135,18 +135,6 @@ def linkage_attack_embeddings(
     }
 
 
-def _ppl_scores(
-    texts: List[str],
-    model_name_or_path: str,
-    batch_size: int = 8,
-) -> np.ndarray:
-    ppl = evaluate.load("perplexity", module_type="metric")
-    # compute retourne un dict avec clé "perplexities"
-    vals = ppl.compute(predictions=texts, model_id="gpt2", max_length=512)
-    print(vals)
-    return np.array(vals["perplexities"], dtype=float)
-
-
 def mia_bb_perplexity(
     model_name_or_path: str,
     public_df: pd.DataFrame,
@@ -154,8 +142,10 @@ def mia_bb_perplexity(
     text_col: str = "ground_texts",
     batch_size: int = 8,
 ) -> Dict[str, float]:
-    pub_ppl = _ppl_scores(public_df[text_col].tolist(), model_name_or_path, batch_size)
-    priv_ppl = _ppl_scores(
+    pub_ppl = _compute_ppl_scores(
+        public_df[text_col].tolist(), model_name_or_path, batch_size
+    )
+    priv_ppl = _compute_ppl_scores(
         private_df[text_col].tolist(), model_name_or_path, batch_size
     )
 

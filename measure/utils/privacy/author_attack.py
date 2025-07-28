@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -22,27 +22,7 @@ MAX_LENGTH = 512
 STATIC_TRAINERS: Dict[str, Trainer] = {}
 
 
-def split_df(split: List[int], df: pd.DataFrame) -> List[pd.DataFrame]:
-    """Split DataFrame into train, validation, and test sets based on provided split ratios.
-    Args:
-        split: List of integers representing the split ratios for train, val, and test sets
-        df: DataFrame to be split
-    Returns:
-        List of DataFrames for train, validation, and test sets
-    """
-    total_rows = len(df)
-    random_df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-    train_size = int(total_rows * (split[0] / 100))
-    val_size = int(total_rows * (split[1] / 100))
-
-    return [
-        random_df.iloc[:train_size].index.to_list(),
-        random_df.iloc[train_size : train_size + val_size].index.to_list(),
-        random_df.iloc[train_size + val_size :].index.to_list(),
-    ]
-
-
-def attack(
+def _attack(
     clean_df: pd.DataFrame,
     private_df: pd.DataFrame,
     train_ds: pd.DataFrame,
@@ -120,7 +100,7 @@ def attack(
     val_df = val_df[[val_text_field, private_id_field]].dropna()
     test_df = test_df[[test_text_field, private_id_field]].dropna()
 
-    stats = get_stats(
+    stats = _get_stats(
         train_df=train_df,
         test_df=test_df,
         val_df=val_df,
@@ -133,7 +113,7 @@ def attack(
     return stats
 
 
-def compute_metrics(eval_pred: EvalPrediction) -> Dict[str, float]:
+def _compute_metrics(eval_pred: EvalPrediction) -> Dict[str, float]:
     """Compute evaluation metrics for model predictions.
 
     Args:
@@ -153,7 +133,7 @@ def compute_metrics(eval_pred: EvalPrediction) -> Dict[str, float]:
     return stats
 
 
-def get_trained_trainer(
+def _get_trained_trainer(
     train_dataset: Dataset, val_dataset: Dataset, num_labels: int, label: str
 ) -> Trainer:
     """Get a trained BERT trainer for classification.
@@ -193,14 +173,14 @@ def get_trained_trainer(
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        compute_metrics=compute_metrics,
+        compute_metrics=_compute_metrics,
     )
     trainer.train()
     STATIC_TRAINERS[label] = trainer
     return trainer
 
 
-def run_eval(trainer: Trainer, test_dataset: Dataset) -> Dict[str, float]:
+def _run_eval(trainer: Trainer, test_dataset: Dataset) -> Dict[str, float]:
     """Run evaluation on test dataset.
 
     Args:
@@ -214,7 +194,7 @@ def run_eval(trainer: Trainer, test_dataset: Dataset) -> Dict[str, float]:
     return test_results
 
 
-def get_stats(
+def _get_stats(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
     val_df: pd.DataFrame,
@@ -270,10 +250,10 @@ def get_stats(
             }
         )
 
-        trainer = get_trained_trainer(
+        trainer = _get_trained_trainer(
             train_dataset, val_dataset, num_labels=num_classes, label=label_field
         )
-        test_stats = run_eval(trainer, test_dataset)
+        test_stats = _run_eval(trainer, test_dataset)
         if verbose:
             print(f"Test statistics for {label_field}:")
             print(test_stats)

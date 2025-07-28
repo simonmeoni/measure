@@ -3,7 +3,7 @@ from scipy.linalg import sqrtm
 from sentence_transformers import SentenceTransformer
 
 
-class Fid:
+class _Fid:
     def __init__(
         self,
         model_name: str = "all-MiniLM-L6-v2",
