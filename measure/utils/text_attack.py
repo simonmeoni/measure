@@ -244,7 +244,7 @@ def get_stats(
         num_classes: int = int(train_df[label_field].nunique())
         train_labels = torch.tensor(train_df[label_field].values, dtype=torch.long)
         val_labels = torch.tensor(val_df[label_field].values, dtype=torch.long)
-        test_labels = torch.tensor(val_df[label_field].values, dtype=torch.long)
+        test_labels = torch.tensor(test_df[label_field].values, dtype=torch.long)
 
         train_dataset = Dataset.from_dict(
             {
