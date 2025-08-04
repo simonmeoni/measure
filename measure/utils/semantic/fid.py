@@ -1,6 +1,8 @@
+from typing import List
+
 import numpy as np
-from scipy.linalg import sqrtm
-from sentence_transformers import SentenceTransformer
+import torch
+from sentence_transformers import SentenceTransformer, util
 
 
 class _Fid:
@@ -21,29 +23,28 @@ class _Fid:
         self.batch_size = batch_size
         self.normalize = normalize
 
-    def _embed(self, texts: list[str]) -> np.ndarray:
-        return self.model.encode(
-            texts,
-            batch_size=self.batch_size,
-            convert_to_numpy=True,
-            normalize_embeddings=self.normalize,
-        )
-
-    @staticmethod
-    def _compute_stats(embeddings: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        mu = np.mean(embeddings, axis=0)
-        sigma = np.cov(embeddings, rowvar=False)
-        return mu, sigma
-
     @staticmethod
     def _compute_fid(
-        mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray
-    ) -> float:
-        diff = mu1 - mu2
-        covmean = sqrtm(sigma1 @ sigma2)
-        if np.iscomplexobj(covmean):  # Nettoyage numérique
-            covmean = covmean.real
-        return np.sum(diff**2) + np.trace(sigma1 + sigma2 - 2 * covmean)
+        real_embeddings: List[torch.Tensor], synth_embeddings: List[torch.Tensor]
+    ) -> dict:
+        """
+        Computes the Frechet Inception Distance given a list of real and
+        synthetic embedding representations of the source and reference documents.
+        """
+        real_avg_embedding = sum(real_embeddings) / len(real_embeddings)
+        real_scores = [
+            util.pytorch_cos_sim(real_avg_embedding, real_embedding)
+            for real_embedding in real_embeddings
+        ]
+        synth_scores = [
+            util.pytorch_cos_sim(real_avg_embedding, synth_embedding)
+            for synth_embedding in synth_embeddings
+        ]
+
+        return {
+            "real_scores": [i.item() for i in real_scores],
+            "synth_scores": [i.item() for i in synth_scores],
+        }
 
     def compute(self, references: list[str], predictions: list[str]) -> float:
         """
@@ -53,10 +54,12 @@ class _Fid:
         :param predictions: Textes générés.
         :return: Valeur de la FID.
         """
-        ref_embeddings = self._embed(references)
-        pred_embeddings = self._embed(predictions)
 
-        mu_ref, sigma_ref = self._compute_stats(ref_embeddings)
-        mu_pred, sigma_pred = self._compute_stats(pred_embeddings)
+        synth_text_embedding = self.model.encode(predictions)
+        real_text_embedding = self.model.encode(references)
 
-        return self._compute_fid(mu_ref, sigma_ref, mu_pred, sigma_pred)
+        fid_score_result = _Fid._compute_fid(
+            real_text_embedding,
+            synth_text_embedding,
+        )
+        return np.mean(fid_score_result["synth_scores"])

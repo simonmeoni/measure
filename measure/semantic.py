@@ -34,14 +34,17 @@ def similarity_metrics(
         num_buckets=int(0.1 * len(predictions)),
         mauve_scaling_factor=mauve_scaling_factor,
         device_id=0,
+        featurize_model_name="gpt2",
+        verbose=False,
+        max_text_length=1024,
     )
 
     perplexity = evaluate.load("perplexity", module_type="metric")
     predictions_perplexity_results = perplexity.compute(
-        predictions=predictions, model_id="gpt2", max_length=512
+        predictions=predictions, model_id="gpt2", max_length=1024
     )
     references_perplexity_results = perplexity.compute(
-        predictions=references, model_id="gpt2", max_length=512
+        predictions=references, model_id="gpt2", max_length=1024
     )
 
     fid_calculator = _Fid(model_name="all-mpnet-base-v2")
