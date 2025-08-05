@@ -28,13 +28,14 @@ def similarity_metrics(
     predictions: list, references: list, mauve_scaling_factor: int = 5
 ):
 
+    model_id = "sentence-transformers/paraphrase-MiniLM-L6-v2"
     mauve_score = mauve.compute_mauve(
         p_text=references,
         q_text=predictions,
         num_buckets=int(0.1 * len(predictions)),
         mauve_scaling_factor=mauve_scaling_factor,
         device_id=0,
-        featurize_model_name="gpt2",
+        featurize_model_name=model_id,
         verbose=False,
         max_text_length=1024,
     )
@@ -47,7 +48,7 @@ def similarity_metrics(
         predictions=references, model_id="gpt2", max_length=1024
     )
 
-    fid_calculator = _Fid(model_name="all-mpnet-base-v2")
+    fid_calculator = _Fid(model_name=model_id)
     fid_score = fid_calculator.compute(references, predictions)
 
     return {
